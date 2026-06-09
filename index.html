@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a0a00">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Gödöllő">
+<link rel="manifest" href="manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<title>Gödöllői Királyi Kastély</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#000;font-family:'Georgia','Times New Roman',serif}
+
+#video-bg{
+  position:fixed;inset:0;width:100%;height:100%;
+  object-fit:cover;object-position:center top;
+  z-index:1;
+}
+
+#vignette{
+  position:fixed;inset:0;z-index:2;
+  background:
+    radial-gradient(ellipse at center, transparent 25%, rgba(0,0,0,0.6) 100%),
+    linear-gradient(to bottom,
+      rgba(0,0,0,0.5) 0%,
+      transparent 25%,
+      transparent 50%,
+      rgba(0,0,0,0.95) 100%);
+}
+
+#candles{position:fixed;inset:0;z-index:3;pointer-events:none}
+
+#overlay{
+  position:fixed;inset:0;z-index:10;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:flex-end;
+  padding:0 16px clamp(44px,10vh,88px);
+  pointer-events:none;
+  text-align:center;
+}
+
+#crown{
+  font-size:clamp(28px,7vw,48px);
+  color:#d4a820;
+  margin-bottom:10px;
+  opacity:0;animation:fadeInDown 2s 0.8s forwards;
+  filter:drop-shadow(0 0 18px rgba(212,168,32,0.95));
+}
+
+#hamarosan{
+  font-family:'Cormorant Garamond', 'Georgia', serif;
+  font-weight:600;
+  font-size:clamp(34px,9vw,82px);
+  color:#fff8ee;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  line-height:1;
+  width:100%;
+  white-space:nowrap;
+  /* scale down if needed */
+  display:block;
+  opacity:0;animation:fadeInUp 2.2s 1.2s forwards;
+  text-shadow:
+    0 0 50px rgba(212,168,80,0.9),
+    0 0 100px rgba(180,120,20,0.5),
+    0 4px 16px rgba(0,0,0,1);
+}
+
+/* Automatically shrink text to fit width */
+#hamarosan-wrap{
+  width:100%;
+  overflow:hidden;
+  display:flex;
+  justify-content:center;
+}
+
+#divider{
+  width:clamp(60px,40vw,180px);height:1px;margin:14px auto;
+  background:linear-gradient(90deg,transparent,#c9a84c 40%,#c9a84c 60%,transparent);
+  opacity:0;animation:fadeIn 2s 2.2s forwards;
+}
+
+#subtitle{
+  font-family:'Cormorant Garamond', 'Georgia', serif;
+  font-size:clamp(13px,3.6vw,20px);
+  color:#d4a84c;
+  letter-spacing:0.28em;
+  text-align:center;
+  padding:0 12px;
+  opacity:0;animation:fadeIn 2s 2.5s forwards;
+  text-shadow:0 2px 12px rgba(0,0,0,0.95);
+}
+
+#fraktur{
+  font-family:'Cormorant Garamond', serif;
+  font-size:clamp(16px,4.8vw,28px);font-style:italic;font-weight:300;letter-spacing:0.18em;
+  color:#c9a84c;
+  margin-top:10px;
+  letter-spacing:0.04em;
+  opacity:0;animation:fadeIn 2s 2.9s forwards;
+  text-shadow:
+    0 0 30px rgba(212,168,32,0.7),
+    0 2px 8px rgba(0,0,0,0.95);
+  line-height:1.3;
+  padding:0 12px;
+}
+
+#year{
+  font-size:clamp(9px,2vw,12px);color:#6a5530;
+  letter-spacing:0.22em;margin-top:10px;
+  opacity:0;animation:fadeIn 2s 3.3s forwards;
+}
+
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-22px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInUp{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+</style>
+</head>
+<body>
+
+<video id="video-bg" autoplay muted loop playsinline preload="auto">
+  <source src="sisi_video.mp4" type="video/mp4">
+</video>
+
+<div id="vignette"></div>
+<canvas id="candles"></canvas>
+
+<div id="overlay">
+  <div id="crown">♛</div>
+  <div id="hamarosan-wrap">
+    <span id="hamarosan">Hamarosan</span>
+  </div>
+  <div id="divider"></div>
+  <div id="subtitle">Gödöllői Királyi Kastély</div>
+  <div id="fraktur">Virtuális Karakterjáték</div>
+  <div id="year">GRASSALKOVICH-KASTÉLY &nbsp;·&nbsp; 1735</div>
+</div>
+
+<script>
+// ── Auto-fit HAMAROSAN felirat szélességhez ─────────────────
+function fitText(){
+  const el = document.getElementById('hamarosan');
+  const wrap = document.getElementById('hamarosan-wrap');
+  const maxW = wrap.offsetWidth;
+  let size = Math.min(window.innerWidth * 0.09, 82);
+  el.style.fontSize = size + 'px';
+  // shrink until it fits
+  while(el.scrollWidth > maxW && size > 24){
+    size -= 1;
+    el.style.fontSize = size + 'px';
+  }
+}
+fitText();
+window.addEventListener('resize', fitText);
+
+// ── Candle flicker glow ─────────────────────────────────────
+const cvs = document.getElementById('candles');
+const ctx = cvs.getContext('2d');
+function resize(){cvs.width=window.innerWidth;cvs.height=window.innerHeight;fitText();}
+resize();
+window.addEventListener('resize',resize);
+
+const particles=[];
+function spawnParticle(){
+  return{
+    x:cvs.width*(0.3+Math.random()*0.5),
+    y:cvs.height*(0.05+Math.random()*0.25),
+    vx:(Math.random()-0.5)*0.5,
+    vy:-Math.random()*1.0-0.3,
+    life:1.0,
+    decay:Math.random()*0.014+0.007,
+    size:Math.random()*2.5+0.8,
+    hue:Math.random()*28+22
+  };
+}
+for(let i=0;i<50;i++) particles.push(spawnParticle());
+
+let t=0;
+function draw(){
+  requestAnimationFrame(draw);
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  t+=0.04;
+
+  const f1=0.055+Math.sin(t*3.2)*0.018+Math.sin(t*7.8)*0.009;
+  const g=ctx.createRadialGradient(cvs.width*0.5,cvs.height*0.05,0,cvs.width*0.5,cvs.height*0.05,cvs.width*0.5);
+  g.addColorStop(0,`rgba(255,210,90,${f1})`);
+  g.addColorStop(0.5,`rgba(255,140,30,${f1*0.35})`);
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,cvs.width,cvs.height);
+
+  for(let i=0;i<particles.length;i++){
+    const p=particles[i];
+    p.x+=p.vx+Math.sin(t*2.1+i*0.7)*0.25;
+    p.y+=p.vy; p.life-=p.decay;
+    if(p.life<=0){particles[i]=spawnParticle();continue;}
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.size*p.life,0,Math.PI*2);
+    ctx.fillStyle=`hsla(${p.hue},90%,72%,${p.life*0.65})`;
+    ctx.fill();
+  }
+}
+draw();
+
+// ── Mobilon video autoplay ──────────────────────────────────
+const vid=document.getElementById('video-bg');
+document.addEventListener('touchstart',()=>vid.play(),{once:true});
+</script>
+</body>
+</html>
